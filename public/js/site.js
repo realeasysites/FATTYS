@@ -1,4 +1,4 @@
-// 18+ gate, mobile nav, and the owner's announcement banner.
+// 18+ gate, mobile nav, menu tabs, moving strip, owner's banner, footer year.
 (function () {
   var KEY = 'fattys_18_ok';
   var DAYS = 30;
@@ -24,14 +24,13 @@
     g.setAttribute('aria-modal', 'true');
     g.setAttribute('aria-labelledby', 'gate-title');
     g.innerHTML =
-      '<div class="rays" aria-hidden="true"></div>' +
       '<div class="agegate-box">' +
-      '<img src="/img/logo-400.webp" alt="Fatty\'s Delivery" width="300" height="300">' +
-      '<h1 id="gate-title">Are you 18 or older?</h1>' +
+      '<img src="/img/logo-400.webp" alt="Fatty\'s Delivery" width="210" height="210">' +
+      '<h1 id="gate-title">18 or older?</h1>' +
       '<p>Fatty\'s serves qualified medical cannabis patients only. You must be 18+ to enter this site.</p>' +
       '<div class="agegate-actions">' +
-      '<button type="button" class="btn btn-sun" data-yes>Yes, I\'m 18 or older</button>' +
-      '<button type="button" class="btn btn-ghost" data-no>No, I\'m under 18</button>' +
+      '<button type="button" class="btn btn-ink" data-yes>Yes, I\'m 18 or older</button>' +
+      '<button type="button" class="btn btn-line" data-no>No, I\'m under 18</button>' +
       '</div><small>You\'ll still need a valid medical card and photo ID at delivery.</small></div>';
     document.body.appendChild(g);
     document.body.style.overflow = 'hidden';
@@ -47,28 +46,58 @@
     });
   }
 
+  function tabs() {
+    var list = document.querySelector('.tabs[role=tablist]');
+    if (!list) return;
+    var btns = Array.prototype.slice.call(list.querySelectorAll('[role=tab]'));
+    function pick(b, focus) {
+      btns.forEach(function (x) {
+        var on = x === b;
+        x.setAttribute('aria-selected', on ? 'true' : 'false');
+        x.tabIndex = on ? 0 : -1;
+        document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+      });
+      if (focus) b.focus();
+    }
+    btns.forEach(function (b, i) {
+      b.addEventListener('click', function () { pick(b); });
+      b.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') pick(btns[(i + 1) % btns.length], true);
+        if (e.key === 'ArrowLeft') pick(btns[(i - 1 + btns.length) % btns.length], true);
+      });
+    });
+  }
+
   function init() {
     if (!verified()) showGate();
     else document.documentElement.classList.remove('gated');
 
-    var toggle = document.querySelector('.menu-toggle');
-    var nav = document.querySelector('.nav');
-    if (toggle && nav) {
-      toggle.addEventListener('click', function () {
+    var btn = document.getElementById('menuBtn');
+    var nav = document.getElementById('nav');
+    if (btn && nav) {
+      btn.addEventListener('click', function () {
         var open = nav.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.style.overflow = open ? 'hidden' : '';
       });
-      nav.addEventListener('click', function (e) { if (e.target.tagName === 'A') nav.classList.remove('open'); });
+      nav.addEventListener('click', function (e) {
+        if (e.target.closest('a')) { nav.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; }
+      });
     }
 
+    tabs();
+
+    // Moving strip: duplicate the run once so it loops seamlessly.
+    var run = document.getElementById('beltRun');
+    if (run) run.innerHTML += run.innerHTML.replace(/<li>/g, '<li aria-hidden="true">');
+
     var bar = document.querySelector('.announce');
-    if (bar) {
-      fetch('/api/status').then(function (r) { return r.json(); }).then(function (s) {
-        var msg = s.announcement || (!s.orders_open ? (s.closed_message || 'Online requests are paused right now. Call or text (207) 281-5302.') : '');
-        if (msg) { bar.textContent = msg; bar.hidden = false; }
-        document.dispatchEvent(new CustomEvent('fattys:status', { detail: s }));
-      }).catch(function () {});
-    }
+    fetch('/api/status').then(function (r) { return r.json(); }).then(function (s) {
+      var msg = s.announcement || (!s.orders_open ? (s.closed_message || 'Online requests are paused right now. Call or text (207) 281-5302.') : '');
+      if (bar && msg) { bar.textContent = msg; bar.hidden = false; }
+      document.dispatchEvent(new CustomEvent('fattys:status', { detail: s }));
+    }).catch(function () {});
+
     var y = document.querySelector('[data-year]');
     if (y) y.textContent = new Date().getFullYear();
   }

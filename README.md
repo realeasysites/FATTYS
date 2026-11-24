@@ -1,13 +1,15 @@
 # Fatty's Delivery website
 
+Built on the Real Easy Sites **Workbench** template, "sound system" theme (beach sand + reggae red/gold/green).
+
 Medical cannabis delivery site for Fatty's (Biddeford, ME). Built by [Real Easy Sites](https://getrealeasysites.com).
 
 - **18+ gate** on every page (remembered for 30 days on the patient's device).
 - **Menu** at `/menu`: the official Weedmaps **WM Store** embed when `WM_STORE_SNIPPET` is set; otherwise a panel that opens the live Weedmaps menu. Stock is still managed in Weedmaps only.
-- **Delivery requests** at `/order`: no payment. The patient's name, phone, town/address, med card number + expiration, order and timing go to the dashboard.
+- **Delivery requests** in the ticket at `/#order` (`/order` redirects there): no payment. The patient's name, phone, town/address, med card number + expiration, order and timing go to the dashboard.
 - **Owner dashboard** at `/admin`: password-only login, statuses (New → Confirmed → Out for delivery → Done / Cancelled), tap to text/call, delete any request, pause requests, site banner.
 - **Privacy:** alert emails never include card numbers, addresses or order details. Card numbers are erased 30 days after a request is Done/Cancelled; requests are deleted after 180 days. The street address is not published on the site.
-- Old GoDaddy URLs `/order-1` and `/about` redirect to the new pages.
+- Old GoDaddy URLs `/order-1` and `/about` redirect to the new sections.
 
 ## Environment (Render)
 

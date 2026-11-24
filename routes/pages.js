@@ -8,8 +8,8 @@ const router = express.Router();
 const MENU = path.join(__dirname, '..', 'public', 'menu.html');
 
 // Old site paths -> new ones.
-router.get(['/order-1', '/order-1/'], (req, res) => res.redirect(301, '/order'));
-router.get(['/about', '/about/'], (req, res) => res.redirect(301, '/#about'));
+router.get(['/order', '/order/', '/order-1', '/order-1/'], (req, res) => res.redirect(301, '/#order'));
+router.get(['/about', '/about/'], (req, res) => res.redirect(301, '/#deal'));
 
 // WM Store: paste the snippet from Weedmaps (Manage my business > WM Store > Install,
 // website type "HTML") into the WM_STORE_SNIPPET environment variable on Render.
