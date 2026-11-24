@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Requests | Fatty's Dashboard</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root { --bg: #0c0a10; --panel: #16131c; --line: #2c2734; --cream: #f8ecd4; --muted: #a99d8c; --sun: #ffd21f; --red: #d9311f; --green: #3fb86b; --sky: #5aa9d6; --orange: #f07a1a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--cream); font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: #000; border-bottom: 1px solid var(--line); }
+  .bar { max-width: 980px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .bar img { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--sun); }
+  .bar b { font-size: 18px; }
+  [hidden] { display: none !important; }
+  @media (max-width: 480px) { .bar b { font-size: 16px; } .view-site { display: none; } }
+  .bar .sp { flex: 1; }
+  button, .btn { font: inherit; font-weight: 700; border: 1px solid var(--line); background: var(--panel); color: var(--cream); padding: 8px 14px; border-radius: 999px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  button:hover, .btn:hover { border-color: var(--sun); }
+  main { max-width: 980px; margin: 0 auto; padding: 16px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 16px; }
+  .tabs button[aria-pressed="true"] { background: var(--sun); color: #000; border-color: var(--sun); }
+  .tabs .n { background: rgba(0,0,0,.25); border-radius: 99px; padding: 0 7px; font-size: 12px; }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 14px; }
+  .switch.closed { border-color: var(--red); background: #2a1210; }
+  .empty { text-align: center; color: var(--muted); padding: 60px 10px; }
+  .req { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--muted); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .req.s-new { border-left-color: var(--sun); }
+  .req.s-confirmed { border-left-color: var(--sky); }
+  .req.s-out { border-left-color: var(--orange); }
+  .req.s-done { border-left-color: var(--green); opacity: .8; }
+  .req.s-cancelled { opacity: .55; }
+  .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+  .name { font-size: 19px; font-weight: 800; }
+  .code { font-family: ui-monospace, monospace; color: var(--sun); font-weight: 700; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: 3px 9px; border-radius: 99px; background: #000; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; margin: 12px 0; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .k { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .v { font-weight: 600; word-break: break-word; }
+  .v a { color: var(--sun); }
+  .items { white-space: pre-wrap; background: #000; border-radius: 10px; padding: 10px 12px; margin: 4px 0 0; font-weight: 500; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .actions .go { background: var(--sun); color: #000; border-color: var(--sun); }
+  .actions .del { margin-left: auto; color: #ff9b8c; }
+  .card-num { font-family: ui-monospace, monospace; }
+  .settings { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 28px; }
+  .settings h2 { font-size: 17px; margin: 0 0 10px; }
+  .settings label { display: block; font-weight: 700; margin: 10px 0 4px; }
+  .settings input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: #000; color: #fff; font: inherit; }
+  .note { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--sun); color: #000; font-weight: 800; padding: 10px 18px; border-radius: 99px; display: none; }
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <img src="/img/icon-192.png" alt="">
+  <b>Delivery requests</b>
+  <span class="sp"></span>
+  <a class="btn view-site" href="/" target="_blank">View site</a>
+  <form method="post" action="/admin/logout" style="margin:0"><button type="submit">Sign out</button></form>
+</div></header>
+<main>
+  <div class="switch" id="switch">
+    <div><b id="open-label">Taking online requests</b><div class="note" id="open-note">Patients can send delivery requests from the website.</div></div>
+    <button type="button" id="open-btn">Pause requests</button>
+  </div>
+  <div class="tabs" id="tabs">
+    <button type="button" data-s="active" aria-pressed="true">Active <span class="n" data-n="active">0</span></button>
+    <button type="button" data-s="new">New <span class="n" data-n="new">0</span></button>
+    <button type="button" data-s="confirmed">Confirmed <span class="n" data-n="confirmed">0</span></button>
+    <button type="button" data-s="out">Out for delivery <span class="n" data-n="out">0</span></button>
+    <button type="button" data-s="done">Done <span class="n" data-n="done">0</span></button>
+    <button type="button" data-s="cancelled">Cancelled <span class="n" data-n="cancelled">0</span></button>
+  </div>
+  <div id="list"><div class="empty">Loading...</div></div>
+
+  <section class="settings">
+    <h2>Website settings</h2>
+    <label for="ann">Banner across the top of the site <span class="note">(leave blank for none)</span></label>
+    <input id="ann" maxlength="160" placeholder="e.g. New Funk House drops just landed!">
+    <label for="closed">Message when requests are paused</label>
+    <input id="closed" maxlength="200" placeholder="e.g. Back tomorrow at 9am. Text to pre-order.">
+    <div class="actions"><button type="button" class="go" id="save">Save</button></div>
+    <p class="note" id="email-status"></p>
+    <p class="note" id="menu-status"></p>
+    <p class="note">Medical card numbers are erased automatically 30 days after a request is marked Done or Cancelled. Requests older than 180 days are deleted.</p>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  var state = { s: 'active', settings: null, seen: null };
+  var LABEL = { new: 'New', confirmed: 'Confirmed', out: 'Out for delivery', done: 'Done', cancelled: 'Cancelled' };
+  var NEXT = { new: ['confirmed', 'Confirm'], confirmed: ['out', 'Out for delivery'], out: ['done', 'Mark delivered'] };
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  function toast(m) { var t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = 'none'; }, 2200); }
+  function api(url, opts) {
+    opts = opts || {};
+    if (opts.body) opts.headers = { 'Content-Type': 'application/json' };
+    return fetch(url, opts).then(function (r) {
+      if (r.status === 401) { location.href = '/admin/login'; throw new Error('signed out'); }
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Failed'); return j; });
+    });
+  }
+  function when(r) {
+    if (r.timing === 'asap') return 'Today, ASAP';
+    var d = new Date(r.sched_date + 'T12:00:00');
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + r.sched_window;
+  }
+  function ago(ts) {
+    var d = new Date(ts.replace(' ', 'T') + 'Z');
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function digits(p) { return String(p).replace(/\D/g, ''); }
+  function smsBody(r) { return encodeURIComponent("Hi " + r.name.split(' ')[0] + ", it's Fatty's. Got your request " + r.code + ". "); }
+
+  function card(r) {
+    var tel = digits(r.phone);
+    var map = r.address ? 'https://maps.google.com/?q=' + encodeURIComponent(r.address + ', ' + (r.town === 'Other nearby town' ? 'ME' : r.town + ', ME')) : '';
+    var masked = r.card_number ? '•••• ' + esc(r.card_number.slice(-4)) : '<span class="meta">erased</span>';
+    var nx = NEXT[r.status];
+    return '<article class="req s-' + r.status + '" data-id="' + r.id + '">' +
+      '<div class="top"><div><span class="name">' + esc(r.name) + '</span> <span class="code">' + esc(r.code) + '</span></div>' +
+      '<div><span class="pill">' + LABEL[r.status] + '</span> <span class="meta">' + ago(r.created_at) + '</span></div></div>' +
+      '<div class="grid">' +
+        '<div><div class="k">Phone · prefers ' + (r.contact_pref === 'call' ? 'a call' : 'a text') + '</div><div class="v"><a href="tel:' + tel + '">' + esc(r.phone) + '</a></div></div>' +
+        '<div><div class="k">When</div><div class="v">' + esc(when(r)) + '</div></div>' +
+        '<div><div class="k">' + esc(r.town) + '</div><div class="v">' + (r.address ? '<a href="' + map + '" target="_blank" rel="noopener">' + esc(r.address) + '</a>' : 'Park &amp; Ride meetup') + '</div></div>' +
+        '<div><div class="k">Med card · ' + esc(r.card_state || '') + (r.card_exp ? ' · exp ' + esc(r.card_exp) : '') + '</div><div class="v"><span class="card-num" data-full="' + esc(r.card_number || '') + '">' + masked + '</span>' + (r.card_number ? ' <button type="button" data-act="reveal" style="padding:2px 10px;font-size:12px">Show</button>' : '') + '</div></div>' +
+        (r.email ? '<div><div class="k">Email</div><div class="v"><a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a></div></div>' : '') +
+      '</div>' +
+      '<div class="k">Order</div><div class="items">' + esc(r.items) + '</div>' +
+      (r.notes ? '<div class="k" style="margin-top:10px">Notes</div><div class="items">' + esc(r.notes) + '</div>' : '') +
+      '<div class="actions">' +
+        '<a class="btn go" href="sms:' + tel + '?&body=' + smsBody(r) + '">Text ' + esc(r.name.split(' ')[0]) + '</a>' +
+        '<a class="btn" href="tel:' + tel + '">Call</a>' +
+        (nx ? '<button type="button" data-act="status" data-to="' + nx[0] + '">' + nx[1] + '</button>' : '') +
+        (r.status !== 'cancelled' && r.status !== 'done' ? '<button type="button" data-act="status" data-to="cancelled">Cancel</button>' : '') +
+        (r.status === 'done' || r.status === 'cancelled' ? '<button type="button" data-act="status" data-to="new">Reopen</button>' : '') +
+        '<button type="button" class="del" data-act="delete">Delete</button>' +
+      '</div></article>';
+  }
+
+  function load() {
+    return api('/api/admin/requests?status=' + state.s).then(function (j) {
+      var c = j.counts || {};
+      c.active = (c.new || 0) + (c.confirmed || 0) + (c.out || 0);
+      document.querySelectorAll('[data-n]').forEach(function (el) { el.textContent = c[el.dataset.n] || 0; });
+      document.title = (c.new ? '(' + c.new + ') ' : '') + "Requests | Fatty's Dashboard";
+      if (state.seen !== null && (c.new || 0) > state.seen) toast('New delivery request!');
+      state.seen = c.new || 0;
+      $('list').innerHTML = j.requests.length ? j.requests.map(card).join('') : '<div class="empty">Nothing here right now.</div>';
+    }).catch(function () {});
+  }
+
+  $('tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    state.s = b.dataset.s;
+    document.querySelectorAll('#tabs button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    load();
+  });
+
+  $('list').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    var art = b.closest('.req'), id = art.dataset.id;
+    if (b.dataset.act === 'reveal') {
+      var n = art.querySelector('.card-num');
+      var shown = b.textContent === 'Hide';
+      n.textContent = shown ? '•••• ' + n.dataset.full.slice(-4) : n.dataset.full;
+      b.textContent = shown ? 'Show' : 'Hide';
+      return;
+    }
+    if (b.dataset.act === 'status') {
+      api('/api/admin/requests/' + id, { method: 'PATCH', body: JSON.stringify({ status: b.dataset.to }) }).then(function () { toast('Updated'); load(); });
+    }
+    if (b.dataset.act === 'delete') {
+      if (!confirm('Delete this request for good? This can\'t be undone.')) return;
+      api('/api/admin/requests/' + id, { method: 'DELETE' }).then(function () { toast('Deleted'); load(); });
+    }
+  });
+
+  function paintSwitch() {
+    var open = state.settings.orders_open === '1';
+    $('switch').classList.toggle('closed', !open);
+    $('open-label').textContent = open ? 'Taking online requests' : 'Online requests are PAUSED';
+    $('open-note').textContent = open ? 'Patients can send delivery requests from the website.' : 'The order form is hidden and shows your paused message instead.';
+    $('open-btn').textContent = open ? 'Pause requests' : 'Turn requests back on';
+  }
+  function loadSettings() {
+    api('/api/admin/settings').then(function (j) {
+      state.settings = j.settings;
+      $('ann').value = j.settings.announcement || '';
+      $('closed').value = j.settings.closed_message || '';
+      paintSwitch();
+      $('email-status').textContent = j.email.ready ? 'Email alerts go to ' + j.email.to + '.' : 'Email alerts are not set up yet (missing: ' + j.email.missing.join(', ') + '). Requests still save here.';
+      $('menu-status').textContent = j.menu_embed ? 'Weedmaps menu embed: on.' : 'Weedmaps menu embed: not added yet. The menu page links to Weedmaps instead.';
+    });
+  }
+  $('open-btn').addEventListener('click', function () {
+    var open = state.settings.orders_open !== '1';
+    api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({ orders_open: open }) }).then(function (j) { state.settings = j.settings; paintSwitch(); toast(open ? 'Requests are on' : 'Requests paused'); });
+  });
+  $('save').addEventListener('click', function () {
+    api('/api/admin/settings', { method: 'PUT', body: JSON.stringify({ announcement: $('ann').value, closed_message: $('closed').value }) }).then(function (j) { state.settings = j.settings; toast('Saved'); });
+  });
+
+  load(); loadSettings();
+  setInterval(load, 30000);
+})();
+</script>
+</body>
+</html>
