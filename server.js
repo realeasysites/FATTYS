@@ -28,7 +28,15 @@ app.use('/api', express.json({ limit: '30kb' }), require('./routes/public'));
 app.use(require('./routes/pages'));
 
 app.get('/healthz', (req, res) => res.send('ok'));
-app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'], maxAge: '1h' }));
+// Pages, styles and scripts always check for a newer copy (cheap 304s when unchanged), so an
+// update is never mixed with an old cached file. Images can be cached for a day.
+app.use(express.static(path.join(__dirname, 'public'), {
+  extensions: ['html'],
+  setHeaders(res, file) {
+    if (/\.(html|css|js|xml|txt)$/.test(file)) res.setHeader('Cache-Control', 'no-cache');
+    else res.setHeader('Cache-Control', 'public, max-age=86400');
+  }
+}));
 app.use((req, res) => res.status(404).sendFile(path.join(__dirname, 'public', '404.html')));
 
 // Safety net: a failed request should never take the whole site down.
